@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: xml-db-postgres
+    environment:
+      POSTGRES_DB: xmldb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123  # ← ДОБАВЛЕНО
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: xml-db-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Подключение к PostgreSQL контейнеру
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/xmldb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres123  # ← СОВПАДАЕТ С ВЫШЕ
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+
+      # URL XML источника
+      XML_SOURCE_URL: https://expro.ru/bitrix/catalog_export/export_Sai.xml
+
+      # Настройки приложения
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_BATCH_SIZE: 50
+      SPRING_JPA_PROPERTIES_HIBERNATE_ORDER_INSERTS: true
+
+      # Логирование
+      LOGGING_LEVEL_COM_EXPRO_XMLSERVICE: INFO
+
+      # Настройки обновления
+      UPDATE_INTERVAL: 3600000  # 1 час
+      BATCH_SIZE: 100
+
+      # Параметры XML парсинга
+      XML_SOURCE_TIMEOUT: 30000
+      XML_SOURCE_RETRY_MAX_ATTEMPTS: 3
+      XML_SOURCE_RETRY_DELAY: 5000
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
