@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 100
+
+xml:
+  source:
+    timeout: 60000
+    retry:
+      max-attempts: 5
+
+update:
+  batch-size: 500
+
+logging:
+  level:
+    com.xmlservice.xmlservice: WARN
+  file:
+    name: /var/log/xml-db-service/app.log

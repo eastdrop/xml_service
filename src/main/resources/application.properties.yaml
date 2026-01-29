@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: xmlservice
+
+profiles:
+  active: @spring.profiles.active@
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/xmldb}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+    show-sql: ${SHOW_SQL:false}
+
+  main:
+    banner-mode: off
+
+xml:
+  source:
+    url: https://expro.ru/bitrix/catalog_export/export_Sai.xml
+    timeout: 30000  # 30 seconds
+    retry:
+      max-attempts: 3
+      delay: 5000   # 5 seconds
+
+update:
+  interval: ${UPDATE_INTERVAL:3600000}  # 1 hour in milliseconds
+  batch-size: ${BATCH_SIZE:100}
+
+logging:
+  level:
+    com.expro.xmlservice: ${LOG_LEVEL:INFO}
+    org.springframework.jdbc.core.JdbcTemplate: ${JDBC_LOG_LEVEL:WARN}
+    org.hibernate.SQL: ${HIBERNATE_LOG_LEVEL:WARN}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/xml-db-service.log
+    max-size: 10MB
+    max-history: 30
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
